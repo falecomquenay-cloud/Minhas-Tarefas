@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro de Sobressalentes</title>
+  <link rel="stylesheet" href="fontes.css" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%2316181a'/><text x='50' y='68' font-size='46' font-family='monospace' fill='white' text-anchor='middle'>SB</text></svg>" />
+</head>
+<body>
+<div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <span class="brand-icon">SB</span>
+        <div>
+          <h1>Cadastro<span>SB</span></h1>
+          <p>Sobressalentes</p>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="painel">
+          <span class="nav-num">01</span>
+          <span class="nav-ico">📈</span>
+          <span class="nav-txt">Painel de evolução</span>
+        </button>
+        <button class="nav-item" data-view="equipamentos">
+          <span class="nav-num">02</span>
+          <span class="nav-ico">⚙️</span>
+          <span class="nav-txt">Equipamentos</span>
+        </button>
+        <button class="nav-item" data-view="lista">
+          <span class="nav-num">03</span>
+          <span class="nav-ico">📋</span>
+          <span class="nav-txt">Todos os cadastros</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-foot">
+        <div class="resumo-lateral" id="resumo-lateral"></div>
+        <div class="sidebar-acoes">
+          <button id="btn-exportar" class="btn-ghost">Exportar dados</button>
+          <label class="btn-ghost file-label">
+            Importar dados
+            <input type="file" id="input-importar" accept="application/json" hidden />
+          </label>
+        </div>
+      </div>
+    </aside>
+
+    <main class="content">
+      <!-- PAINEL -->
+      <section class="view" id="view-painel">
+        <header class="view-header">
+          <div>
+            <h2>Painel de evolução</h2>
+            <p class="subtitle">Andamento do cadastramento dos sobressalentes no sistema Usiminas</p>
+          </div>
+          <p class="carimbo" id="carimbo">atualizado agora</p>
+        </header>
+
+        <div class="faixa" id="faixa"></div>
+
+        <div class="secao">
+          <div class="secao-topo">
+            <h3>Evolução por equipamento</h3>
+            <div class="secao-linha"></div>
+            <div class="legenda">
+              <span><i class="lg-done"></i> concluído</span>
+              <span><i class="lg-cad"></i> em cadastro</span>
+              <span><i class="lg-and"></i> em andamento</span>
+              <span><i class="lg-wait"></i> pendente</span>
+            </div>
+          </div>
+          <div class="painel"><div id="painel-equip" class="prog-list"></div></div>
+        </div>
+
+        <div class="grid-2">
+          <div class="secao">
+            <div class="secao-topo">
+              <h3>Por responsável</h3>
+              <div class="secao-linha"></div>
+            </div>
+            <div class="painel"><div id="painel-resp" class="prog-list"></div></div>
+          </div>
+          <div class="secao">
+            <div class="secao-topo">
+              <h3>Por especialidade</h3>
+              <div class="secao-linha"></div>
+            </div>
+            <div class="painel"><div id="painel-esp" class="prog-list"></div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EQUIPAMENTOS -->
+      <section class="view hidden" id="view-equipamentos">
+        <header class="view-header">
+          <div>
+            <h2>Equipamentos</h2>
+            <p class="subtitle">Escolha um equipamento para ver e cadastrar seus componentes</p>
+          </div>
+          <button class="btn-primary" id="btn-novo-equip">+ Novo equipamento</button>
+        </header>
+
+        <div class="toolbar">
+          <input type="search" id="busca-equip" class="search" placeholder="Buscar equipamento..." />
+        </div>
+
+        <div class="equip-grid" id="equip-grid"></div>
+      </section>
+
+      <!-- FICHA DO EQUIPAMENTO -->
+      <section class="view hidden" id="view-ficha">
+        <button class="btn-voltar" id="btn-voltar">← Equipamentos</button>
+
+        <header class="ficha-head" id="ficha-head"></header>
+
+        <div class="toolbar">
+          <input type="search" id="busca-ficha" class="search" placeholder="Buscar parte ou componente..." />
+          <select id="ficha-esp" class="select">
+            <option value="">Todas as especialidades</option>
+            <option value="Mecânica">Mecânica</option>
+            <option value="Elétrica">Elétrica</option>
+          </select>
+          <select id="ficha-status" class="select">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="andamento">Em andamento</option>
+            <option value="cadastro">Em cadastro</option>
+            <option value="concluido">Concluído</option>
+          </select>
+          <button class="btn-primary" id="btn-novo-comp">+ Componente</button>
+        </div>
+
+        <div id="ficha-partes"></div>
+      </section>
+
+      <!-- LISTA GERAL -->
+      <section class="view hidden" id="view-lista">
+        <header class="view-header">
+          <div>
+            <h2>Todos os cadastros</h2>
+            <p class="subtitle">Lista completa de componentes de todos os equipamentos</p>
+          </div>
+          <button class="btn-primary" id="btn-novo">+ Novo cadastro</button>
+        </header>
+
+        <div class="toolbar">
+          <input type="search" id="busca" class="search" placeholder="Buscar por equipamento, parte, componente, ID ou responsável..." />
+          <select id="f-equip" class="select"></select>
+          <select id="f-esp" class="select">
+            <option value="">Todas as especialidades</option>
+            <option value="Mecânica">Mecânica</option>
+            <option value="Elétrica">Elétrica</option>
+          </select>
+          <select id="f-status" class="select">
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="andamento">Em andamento</option>
+            <option value="cadastro">Em cadastro</option>
+            <option value="concluido">Concluído</option>
+          </select>
+          <select id="f-resp" class="select"></select>
+        </div>
+
+        <div class="table-wrap">
+          <table id="tabela">
+            <thead>
+              <tr>
+                <th>Equipamento</th>
+                <th>Parte</th>
+                <th>Componente</th>
+                <th>NI</th>
+                <th>Especialidade</th>
+                <th>Responsável</th>
+                <th>Status</th>
+                <th>Ações</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <p class="counter" id="contador"></p>
+      </section>
+    </main>
+  </div>
+
+  <!-- MODAL -->
+  <div class="modal-overlay hidden" id="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-head">
+        <h3 id="modal-title">Título</h3>
+        <button class="modal-close" id="modal-close" aria-label="Fechar">✕</button>
+      </div>
+      <form id="modal-form" class="modal-body"></form>
+      <div class="modal-foot">
+        <button type="button" class="btn-ghost dark" id="modal-cancel">Cancelar</button>
+        <button type="submit" form="modal-form" class="btn-primary" id="modal-save">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <datalist id="dl-equip"></datalist>
+  <datalist id="dl-parte"></datalist>
+  <datalist id="dl-resp"></datalist>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
