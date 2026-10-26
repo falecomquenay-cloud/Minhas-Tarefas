@@ -25,13 +25,18 @@
           <span class="nav-ico">📈</span>
           <span class="nav-txt">Painel de evolução</span>
         </button>
-        <button class="nav-item" data-view="equipamentos">
+        <button class="nav-item" data-view="meus">
           <span class="nav-num">02</span>
+          <span class="nav-ico">👤</span>
+          <span class="nav-txt">Meus cadastros</span>
+        </button>
+        <button class="nav-item" data-view="equipamentos">
+          <span class="nav-num">03</span>
           <span class="nav-ico">⚙️</span>
           <span class="nav-txt">Equipamentos</span>
         </button>
         <button class="nav-item" data-view="lista">
-          <span class="nav-num">03</span>
+          <span class="nav-num">04</span>
           <span class="nav-ico">📋</span>
           <span class="nav-txt">Todos os cadastros</span>
         </button>
@@ -92,6 +97,39 @@
             <div class="painel"><div id="painel-esp" class="prog-list"></div></div>
           </div>
         </div>
+      </section>
+
+      <!-- MEUS CADASTROS -->
+      <section class="view hidden" id="view-meus">
+        <header class="view-header">
+          <div>
+            <h2 id="meus-titulo">Meus cadastros</h2>
+            <p class="subtitle" id="meus-sub">Componentes sob sua responsabilidade</p>
+          </div>
+          <button class="btn-sec hidden" id="btn-trocar-eu">Trocar responsável</button>
+        </header>
+
+        <div class="faixa hidden" id="meus-faixa"></div>
+
+        <div class="toolbar hidden" id="meus-filtros">
+          <input type="search" id="busca-meus" class="search" placeholder="Buscar equipamento, parte ou componente..." />
+          <select id="meus-esp" class="select">
+            <option value="">Todas as especialidades</option>
+            <option value="Mecânica">Mecânica</option>
+            <option value="Elétrica">Elétrica</option>
+          </select>
+          <select id="meus-status" class="select">
+            <option value="aberto">Em aberto</option>
+            <option value="">Todos os status</option>
+            <option value="pendente">Pendente</option>
+            <option value="andamento">Em andamento</option>
+            <option value="cadastro">Em cadastro</option>
+            <option value="concluido">Concluído</option>
+          </select>
+          <button class="btn-primary" id="btn-novo-meu">+ Componente</button>
+        </div>
+
+        <div id="meus-conteudo"></div>
       </section>
 
       <!-- EQUIPAMENTOS -->

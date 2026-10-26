@@ -22,6 +22,11 @@
 
   const DB = { itens: [] };
 
+  /* Quem é o colaborador neste navegador, e de quem é a lista exibida */
+  const CHAVE_EU = "cadastrosb.eu";
+  let eu = null;
+  let pessoaVista = null;
+
   /* Equipamento aberto na ficha e partes recolhidas */
   let equipAtual = null;
   const partesFechadas = new Set();
@@ -45,6 +50,20 @@
     } catch (e) {
       toast("Não foi possível salvar. O armazenamento do navegador está cheio.", "error");
     }
+  }
+
+  function carregarEu() {
+    try { eu = localStorage.getItem(CHAVE_EU) || null; } catch (e) { eu = null; }
+    pessoaVista = eu;
+  }
+
+  function definirEu(nome) {
+    eu = (nome || "").trim() || null;
+    pessoaVista = eu;
+    try {
+      if (eu) localStorage.setItem(CHAVE_EU, eu);
+      else localStorage.removeItem(CHAVE_EU);
+    } catch (e) { /* segue sem lembrar */ }
   }
 
   function load() {
@@ -128,10 +147,11 @@
   }
 
   function linhaProgresso(g, chipHTML, opc) {
-    const link = opc && opc.equip;
+    const alvo = opc && (opc.equip ? "equip" : (opc.pessoa ? "pessoa" : null));
+    const link = !!alvo;
     const tag = link ? "button" : "div";
     return `<${tag} class="prog-row"${
-      link ? ` data-ir-equip="${esc(g.nome)}" title="Abrir ${esc(g.nome)}"` : ""}>
+      link ? ` data-ir-${alvo}="${esc(g.nome)}" title="Abrir ${esc(g.nome)}"` : ""}>
       <span class="prog-name">${chipHTML || ""}<span class="txt">${esc(g.nome)}</span>${
         link ? `<span class="prog-ir">→</span>` : ""}</span>
       ${barra(g)}
@@ -196,7 +216,9 @@
       el.addEventListener("click", () => abrirFicha(el.dataset.irEquip)));
 
     $("#painel-resp").innerHTML = agrupar((i) => i.responsavel)
-      .map((g) => linhaProgresso(g)).join("");
+      .map((g) => linhaProgresso(g, "", { pessoa: g.nome })).join("");
+    $$("[data-ir-pessoa]", $("#painel-resp")).forEach((el) =>
+      el.addEventListener("click", () => abrirPessoa(el.dataset.irPessoa)));
     $("#painel-esp").innerHTML = agrupar((i) => i.especialidade)
       .map((g) => linhaProgresso(g, chipEsp(g.nome))).join("");
   }
@@ -229,6 +251,223 @@
     if (esp === "Mecânica") return `<span class="chip esp c-mec">Mec</span>`;
     if (esp === "Elétrica") return `<span class="chip esp c-ele">Elé</span>`;
     return "";
+  }
+
+  /* ---------------- meus cadastros ---------------- */
+
+  /** Iniciais para o avatar: primeira letra do primeiro e do último nome. */
+  function iniciais(nome) {
+    const p = String(nome || "").trim().split(/\s+/).filter(Boolean);
+    if (!p.length) return "?";
+    return (p[0][0] + (p.length > 1 ? p[p.length - 1][0] : "")).toUpperCase();
+  }
+
+  function responsaveis() {
+    return valoresUnicos("responsavel");
+  }
+
+  function renderMeus() {
+    const alvo = $("#meus-conteudo");
+
+    /* Sem ninguém escolhido: pede a identificação uma única vez. */
+    if (!pessoaVista) {
+      $("#meus-titulo").textContent = "Meus cadastros";
+      $("#meus-sub").textContent = "Componentes sob sua responsabilidade";
+      $("#btn-trocar-eu").classList.add("hidden");
+      $("#meus-filtros").classList.add("hidden");
+      $("#meus-faixa").classList.add("hidden");
+      alvo.innerHTML = telaQuemSouEu();
+      ligarQuemSouEu(alvo);
+      return;
+    }
+
+    const souEu = pessoaVista === eu;
+    $("#meus-titulo").textContent = souEu ? "Meus cadastros" : "Cadastros de " + pessoaVista;
+    $("#meus-sub").innerHTML = (souEu
+      ? "Componentes sob sua responsabilidade"
+      : "Você está vendo a lista de outra pessoa") +
+      '<br><span class="eu-chip"><span class="eu-ini">' + esc(iniciais(pessoaVista)) +
+      '</span><span class="eu-nome">' + esc(pessoaVista) + "</span></span>";
+    $("#btn-trocar-eu").classList.remove("hidden");
+    $("#btn-trocar-eu").textContent = souEu ? "Trocar responsável" : "Ver os meus";
+    $("#meus-filtros").classList.remove("hidden");
+    $("#meus-faixa").classList.remove("hidden");
+
+    const todos = DB.itens.filter((i) => i.responsavel === pessoaVista);
+    const g = {
+      total: todos.length,
+      concluido: todos.filter((i) => i.status === "concluido").length,
+      cadastro: todos.filter((i) => i.status === "cadastro").length,
+      andamento: todos.filter((i) => i.status === "andamento").length,
+      pendente: todos.filter((i) => i.status === "pendente").length,
+    };
+    const emAberto = g.total - g.concluido;
+
+    $("#meus-faixa").innerHTML = `
+      <div class="kpi">
+        <div class="rot">Sob responsabilidade</div>
+        <div class="kpi-valor">${g.total}</div>
+        <div class="kpi-sub">${new Set(todos.map((i) => i.equipamento)).size} equipamento(s)</div>
+      </div>
+      <div class="kpi k-done">
+        <div class="rot">Concluídos</div>
+        <div class="kpi-valor">${g.concluido}<span class="pctg">${pct(g.concluido, g.total)}%</span></div>
+        <div class="kpi-sub">${STATUS.concluido.sub}</div>
+      </div>
+      <div class="kpi k-cad">
+        <div class="rot">Em cadastro</div>
+        <div class="kpi-valor">${g.cadastro}</div>
+        <div class="kpi-sub">${STATUS.cadastro.sub}</div>
+      </div>
+      <div class="kpi k-and">
+        <div class="rot">Em andamento</div>
+        <div class="kpi-valor">${g.andamento}</div>
+        <div class="kpi-sub">${STATUS.andamento.sub}</div>
+      </div>
+      <div class="kpi k-wait">
+        <div class="rot">Pendentes</div>
+        <div class="kpi-valor">${g.pendente}</div>
+        <div class="kpi-sub">${STATUS.pendente.sub}</div>
+      </div>`;
+
+    if (!todos.length) {
+      alvo.innerHTML = vazio("—", "Nada sob essa responsabilidade",
+        souEu ? "Nenhum componente está atribuído a você no momento."
+              : "Nenhum componente está atribuído a essa pessoa.");
+      return;
+    }
+
+    /* filtros locais da aba */
+    const termo = $("#busca-meus").value.trim().toLowerCase();
+    const fe = $("#meus-esp").value, fs = $("#meus-status").value;
+    const lista = todos.filter((i) => {
+      if (fe && i.especialidade !== fe) return false;
+      if (fs === "aberto") { if (i.status === "concluido") return false; }
+      else if (fs && i.status !== fs) return false;
+      if (!termo) return true;
+      return `${i.equipamento} ${i.parte} ${i.componente} ${i.ni} ${i.obs}`
+        .toLowerCase().includes(termo);
+    });
+
+    if (!lista.length) {
+      alvo.innerHTML = vazio("—", "Nenhum componente", "Ajuste a busca ou os filtros desta aba.");
+      return;
+    }
+
+    /* agrupa por equipamento, que é como a pessoa organiza o próprio trabalho */
+    const porEquip = new Map();
+    lista.forEach((i) => {
+      const k = i.equipamento || "— sem equipamento —";
+      if (!porEquip.has(k)) porEquip.set(k, []);
+      porEquip.get(k).push(i);
+    });
+
+    alvo.innerHTML = Array.from(porEquip.entries())
+      .sort((a, b) => a[0].localeCompare(b[0], "pt-BR"))
+      .map(([nomeEquip, itens]) => {
+        itens.sort((a, b) =>
+          a.parte.localeCompare(b.parte, "pt-BR") ||
+          a.componente.localeCompare(b.componente, "pt-BR"));
+        /* A barra mede o progresso real da pessoa naquele equipamento,
+           então conta tudo dela — não só o que o filtro deixou à vista. */
+        const dela = todos.filter((i) => (i.equipamento || "— sem equipamento —") === nomeEquip);
+        const ge = {
+          total: dela.length,
+          concluido: dela.filter((i) => i.status === "concluido").length,
+          cadastro: dela.filter((i) => i.status === "cadastro").length,
+          andamento: dela.filter((i) => i.status === "andamento").length,
+        };
+        return `<section class="parte">
+          <div class="parte-head">
+            <button class="parte-seta-btn" data-ir-equip="${esc(nomeEquip)}" title="Abrir ${esc(nomeEquip)}">
+              <span class="parte-nome">${esc(nomeEquip)}</span>
+              <span class="parte-mini">${barra(ge)}</span>
+              <span class="parte-conta"><b>${ge.concluido}</b>/${ge.total}</span>
+            </button>
+          </div>
+          <div class="parte-corpo">${itens.map(linhaMinha).join("")}</div>
+        </section>`;
+      }).join("");
+
+    $$("[data-ir-equip]", alvo).forEach((b) =>
+      b.addEventListener("click", () => abrirFicha(b.dataset.irEquip)));
+    $$("[data-edit]", alvo).forEach((b) =>
+      b.addEventListener("click", () => abrirForm(b.dataset.edit)));
+    $$("[data-del]", alvo).forEach((b) =>
+      b.addEventListener("click", () => excluir(b.dataset.del)));
+  }
+
+  function linhaMinha(i) {
+    const st = STATUS[i.status] || STATUS.pendente;
+    return `<div class="comp">
+      <div class="comp-nome">
+        <div class="comp-crumb">${esc(i.parte)}</div>
+        ${esc(i.componente)}
+        ${i.obs ? `<div class="comp-obs">${esc(i.obs.length > 120 ? i.obs.slice(0, 120) + "…" : i.obs)}</div>` : ""}
+      </div>
+      <div class="comp-ni">${i.ni ? `<span class="ni-tag">${esc(i.ni)}</span>` : `<span class="ni-empty">sem NI</span>`}</div>
+      <div class="comp-esp">${chipEspCompleto(i.especialidade)}</div>
+      <div class="comp-resp"></div>
+      <div class="comp-status"><span class="chip ${st.classe}">${st.rotulo}</span></div>
+      <div class="comp-acoes">
+        <button class="icon-btn" title="Editar" aria-label="Editar ${esc(i.componente)}" data-edit="${i.id}">✏️</button>
+        <button class="icon-btn danger" title="Excluir" aria-label="Excluir ${esc(i.componente)}" data-del="${i.id}">🗑️</button>
+      </div>
+    </div>`;
+  }
+
+  function telaQuemSouEu() {
+    const nomes = responsaveis();
+    return `<div class="vazio-inicio">
+      <h3>Quem é você?</h3>
+      <p>Escolha seu nome para ver apenas os componentes sob sua responsabilidade.
+         A escolha fica salva neste navegador.</p>
+      ${nomes.length ? `<div class="eu-opcoes">${nomes.map((n) =>
+        `<button class="btn-sec" data-sou="${esc(n)}">
+           <span class="eu-ini" style="display:inline-grid;vertical-align:-4px;margin-right:6px">${esc(iniciais(n))}</span>${esc(n)}
+         </button>`).join("")}</div>
+      <div class="eu-sep">ou</div>` : ""}
+      <div class="eu-outro">
+        <input type="text" id="eu-novo" class="search" placeholder="Digite seu nome" autocomplete="off" />
+        <button class="btn-primary" id="btn-eu-novo">Confirmar</button>
+      </div>
+    </div>`;
+  }
+
+  function ligarQuemSouEu(ctx) {
+    $$("[data-sou]", ctx).forEach((b) =>
+      b.addEventListener("click", () => {
+        definirEu(b.dataset.sou);
+        toast(`Você está vendo os cadastros de ${eu}.`);
+        renderMeus();
+      }));
+    const confirmar = () => {
+      const v = $("#eu-novo", ctx).value.trim();
+      if (!v) return toast("Digite seu nome.", "error");
+      definirEu(v);
+      toast(`Você está vendo os cadastros de ${eu}.`);
+      renderMeus();
+    };
+    const btn = $("#btn-eu-novo", ctx);
+    if (btn) btn.addEventListener("click", confirmar);
+    const inp = $("#eu-novo", ctx);
+    if (inp) inp.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); confirmar(); }
+    });
+  }
+
+  function trocarEu() {
+    /* Vendo outra pessoa: o botão volta para a própria lista. */
+    if (pessoaVista !== eu && eu) { pessoaVista = eu; return renderMeus(); }
+    definirEu(null);
+    renderMeus();
+  }
+
+  function abrirPessoa(nome) {
+    pessoaVista = nome;
+    mostrarView("meus");
+    renderMeus();
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   /* ---------------- grade de equipamentos ---------------- */
@@ -774,7 +1013,8 @@
   function renderAtual() {
     renderResumoLateral();
     marcarCarimbo();
-    if (atual === "lista") renderCadastros();
+    if (atual === "meus") renderMeus();
+    else if (atual === "lista") renderCadastros();
     else if (atual === "equipamentos") renderEquipamentos();
     else if (atual === "ficha") renderFicha();
     else renderPainel();
@@ -801,6 +1041,14 @@
     $("#btn-novo").addEventListener("click", () => abrirForm(null));
     $("#btn-novo-equip").addEventListener("click", () => abrirForm(null));
     $("#btn-novo-comp").addEventListener("click", () => abrirForm(null, { equipamento: equipAtual }));
+
+    $("#btn-novo-meu").addEventListener("click", () =>
+      abrirForm(null, { responsavel: pessoaVista || "" }));
+    $("#btn-trocar-eu").addEventListener("click", trocarEu);
+    ["#busca-meus", "#meus-esp", "#meus-status"].forEach((sel) => {
+      const el = $(sel);
+      el.addEventListener(el.tagName === "INPUT" ? "input" : "change", renderMeus);
+    });
 
     $("#busca-equip").addEventListener("input", renderEquipamentos);
     ["#busca-ficha", "#ficha-esp", "#ficha-status"].forEach((s) => {
@@ -833,6 +1081,7 @@
   }
 
   /* ---------------- boot ---------------- */
+  carregarEu();
   load();
   initNav();
   initEventos();

@@ -606,3 +606,38 @@ tbody tr:hover { background: var(--card-2); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
 }
+
+/* ===================== MEUS CADASTROS ===================== */
+
+/* Escolha de quem é o colaborador, na primeira visita */
+.eu-opcoes { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-bottom: 20px; }
+.eu-opcoes .btn-sec { font-size: 13.5px; padding: 10px 16px; }
+.eu-outro { display: flex; gap: 8px; justify-content: center; max-width: 380px; margin: 0 auto; }
+.eu-outro input { flex: 1; min-width: 0; }
+.eu-sep {
+  font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--faint); margin: 4px 0 14px;
+}
+
+/* Identificação de quem está sendo exibido */
+.eu-chip {
+  display: inline-flex; align-items: center; gap: 7px; margin-top: 7px;
+  background: var(--card); border: 1px solid var(--line); border-radius: 20px; padding: 4px 12px 4px 5px;
+}
+.eu-ini {
+  width: 20px; height: 20px; border-radius: 50%; background: var(--ink); color: #fff;
+  display: grid; place-items: center; font-family: var(--mono); font-size: 8.5px; flex-shrink: 0;
+}
+.eu-nome { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+
+/* Blocos por equipamento dentro da aba do colaborador */
+.comp-crumb {
+  font-family: var(--mono); font-size: 8.5px; letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--ink-4); margin-bottom: 4px;
+}
+
+@media (max-width: 760px) {
+  .eu-opcoes { flex-direction: column; }
+  .eu-opcoes .btn-sec { width: 100%; padding: 13px 16px; }
+  .eu-outro { flex-direction: column; max-width: none; }
+}
